@@ -1,0 +1,1 @@
+Sample ADB output will be stored here.

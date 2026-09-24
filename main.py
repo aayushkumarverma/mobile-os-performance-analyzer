@@ -250,48 +250,93 @@ def analyze_data(data):
         print("\nNo process data available.")
         return
 
+    # Convert data into Pandas DataFrame
     df = create_dataframe(data)
+
+    # -------------------------------
+    # PERFORMANCE SUMMARY
+    # -------------------------------
+
+    print("\n=== PERFORMANCE SUMMARY ===")
+
+    print("Processes Analyzed:", len(df))
+
+    top_cpu = get_top_cpu_process(df).iloc[0]
+    top_memory = get_top_memory_process(df).iloc[0]
+
+    print(
+        f"Highest CPU Process: "
+        f"{top_cpu['process']} "
+        f"({top_cpu['cpu_percent']}%)"
+    )
+
+    print(
+        f"Highest RAM Process: "
+        f"{top_memory['process']} "
+        f"({top_memory['memory_mb']} MB)"
+    )
+
+    print(
+        "Average CPU Usage:",
+        round(get_average_cpu(df), 2),
+        "%"
+    )
+
+    print(
+        "Average Process RAM:",
+        round(get_average_memory(df), 2),
+        "MB"
+    )
+
+    # -------------------------------
+    # FULL PROCESS DATA
+    # -------------------------------
 
     print("\n=== PROCESS DATA ===")
     print(df.to_string(index=False))
 
+    # -------------------------------
+    # TOP CPU PROCESSES
+    # -------------------------------
+
     print("\n=== TOP CPU PROCESSES ===")
 
     print(
-        get_top_cpu_process(
-            df
-        ).head(5).to_string(
-            index=False
-        )
+        get_top_cpu_process(df)
+        .head(5)
+        .to_string(index=False)
     )
+
+    # -------------------------------
+    # TOP RAM PROCESSES
+    # -------------------------------
 
     print("\n=== TOP RAM PROCESSES ===")
 
     print(
-        get_top_memory_process(
-            df
-        ).head(5).to_string(
-            index=False
-        )
+        get_top_memory_process(df)
+        .head(5)
+        .to_string(index=False)
     )
 
-    print("\nAverage CPU Usage:")
-    print(
-        round(
-            get_average_cpu(df),
-            2
-        ),
-        "%"
-    )
+    # -------------------------------
+    # SAVE CSV
+    # -------------------------------
 
-    print("\nAverage Process RAM:")
-    print(
-        round(
-            get_average_memory(df),
-            2
-        ),
-        "MB"
-    )
+    csv_file = export_csv(df)
+
+    print("\nCSV saved successfully:")
+    print(csv_file)
+
+    # -------------------------------
+    # CREATE GRAPHS
+    # -------------------------------
+
+    plot_cpu_usage(df)
+    plot_memory_usage(df)
+    plot_thread_count(df)
+
+    print("\nGraphs saved successfully in output folder.")
 
     # Save CSV
     csv_file = export_csv(df)
@@ -300,18 +345,6 @@ def analyze_data(data):
         "\nCSV saved:",
         csv_file
     )
-
-    # Generate graphs
-    plot_cpu_usage(df)
-
-    plot_memory_usage(df)
-
-    plot_thread_count(df)
-
-    print(
-        "Graphs saved in output folder."
-    )
-
 
 # -------------------------------------------------
 # Main Program

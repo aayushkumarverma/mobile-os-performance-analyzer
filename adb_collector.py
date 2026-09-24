@@ -136,12 +136,10 @@ def get_processes_raw() -> str:
 
 
 def get_cpu_raw() -> str:
-    """
-    Collect one snapshot of CPU and process activity.
-    """
+    """Collect recent CPU usage information."""
 
     return run_adb_command(
-        ["shell", "top", "-n", "1"],
+        ["shell", "dumpsys", "cpuinfo"],
         timeout=15
     )
 

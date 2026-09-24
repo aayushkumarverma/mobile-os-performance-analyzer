@@ -171,26 +171,51 @@ def parse_processes(raw_output: str) -> list[dict]:
 
 def parse_cpu_output(raw_output: str) -> dict[int, float]:
     """
-    Parse process CPU usage from Android 'top'.
+    Parse CPU usage from Android dumpsys cpuinfo.
 
-    Returns:
-        {
-            PID: CPU_PERCENT
-        }
+    Also supports the older top format used by
+    our sample/test data.
     """
 
     cpu_data = {}
+
+    # ---------------------------------
+    # dumpsys cpuinfo format
+    # ---------------------------------
+
+    for line in raw_output.splitlines():
+
+        match = re.match(
+            r"^\s*([\d.]+)%\s+(\d+)/",
+            line
+        )
+
+        if match:
+
+            cpu_percent = float(
+                match.group(1)
+            )
+
+            pid = int(
+                match.group(2)
+            )
+
+            cpu_data[pid] = cpu_percent
+
+    # If dumpsys parsing worked, use it
+    if cpu_data:
+        return cpu_data
+
+    # ---------------------------------
+    # Fallback: top format
+    # Used by sample/test data
+    # ---------------------------------
 
     lines = raw_output.strip().splitlines()
 
     header = None
     header_index = None
     cpu_header = None
-
-    # Different Android versions may use:
-    # %CPU
-    # CPU%
-    cpu_names = ["%CPU", "CPU%"]
 
     for index, line in enumerate(lines):
 
@@ -199,19 +224,21 @@ def parse_cpu_output(raw_output: str) -> dict[int, float]:
         if "PID" not in columns:
             continue
 
-        for possible_cpu in cpu_names:
+        for possible_cpu in ["%CPU", "CPU%"]:
 
             if possible_cpu in columns:
+
                 header = columns
                 header_index = index
                 cpu_header = possible_cpu
+
                 break
 
         if header is not None:
             break
 
     if header is None:
-        return cpu_data
+        return {}
 
     pid_index = header.index("PID")
     cpu_index = header.index(cpu_header)
@@ -220,15 +247,22 @@ def parse_cpu_output(raw_output: str) -> dict[int, float]:
 
         columns = line.split()
 
-        if len(columns) <= max(pid_index, cpu_index):
+        if len(columns) <= max(
+            pid_index,
+            cpu_index
+        ):
             continue
 
         try:
-            pid = int(columns[pid_index])
 
-            cpu_text = columns[cpu_index].replace("%", "")
+            pid = int(
+                columns[pid_index]
+            )
 
-            cpu = float(cpu_text)
+            cpu = float(
+                columns[cpu_index]
+                .replace("%", "")
+            )
 
         except (ValueError, TypeError):
             continue
